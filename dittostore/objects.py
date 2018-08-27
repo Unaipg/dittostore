@@ -116,6 +116,9 @@ class BaseEntity:
     __base_filters__ = []
     __exclude__ = []
     __allowed_types__ = [str, int, float, bool, datetime.datetime, dict, list]
+    soft_delete = True
+    soft_delete_key = 'deleted'
+    soft_delete_at_key = 'deleted_at'
 
     def __init__(self, key: Union[Key, str], _kind: Optional[str] = None, _project: Optional[str] = None,
                  _raw_entity: Optional[Entity] = None, **kwargs):
@@ -157,10 +160,19 @@ class BaseEntity:
                 pass
         return value
 
-    def delete(self):
-        """Delete the object from Datastore."""
-        client = datastore.Client(project=self.__project__)
-        client.delete(self.__raw_entity.key)
+    def delete(self, hard: bool = None):
+        """Delete the object from Datastore.
+
+        :param hard:
+        """
+        hard_delete = hard if hard is not None else not self.soft_delete
+        if hard_delete:
+            client = datastore.Client(project=self.__project__)
+            client.delete(self.__raw_entity.key)
+        else:
+            setattr(self, self.soft_delete_key, True)
+            setattr(self, self.soft_delete_at_key, datetime.now().timestamp())
+            self.save()
 
     @classmethod
     def generate_key(cls, identifier: str, parent_key: Optional[Key] = None):

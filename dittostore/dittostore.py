@@ -20,7 +20,12 @@ class DittoStore:
         [entity._save_offline(exclude_from_indexes=exclude_from_indexes) for entity in entities]
         client.put_multi([entity.get_raw_entity() for entity in entities])
 
-    def delete_multi(self, entities : List[BaseEntity], batch_size: int = 500):
+    def delete_multi(self, entities: List[BaseEntity], batch_size: int = 500, hard: bool = None):
+        # Aquí nos pueden pasar entidades distintas con distintos defaults
+        # Eso no mola naaaada
+        hard_delete = hard if hard is not None else False
+        if hard is None:
+            soft_list, hard_list = self._separar_por_tipo_De_borrado()
         client = datastore.Client(project=self.project)
         delete_keys = []
         for index, entity in enumerate(entities, 1):
